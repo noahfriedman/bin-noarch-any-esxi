@@ -1,0 +1,55 @@
+#!/bin/sh
+# $Id$
+
+iscsi_get_devs()
+{
+  esxcli nmp path list \
+    | sed -e '/iqn.1995-06.com.splode:prv.esx01/!d' \
+          -e 's=.*-naa\.=naa.=' \
+    | sort -u
+}
+
+iscsi_set_rr_psp()
+{
+  esxcli nmp device setpolicy --device $1 --psp VMW_PSP_RR
+}
+
+iscsi_set_rr_iops()
+{
+  esxcli nmp roundrobin setconfig --device $1 --type iops --iops $2
+}
+
+iscsi_set_fixed_psp()
+{
+  esxcli nmp device setpolicy --device $1 --psp VMW_PSP_FIXED
+}
+
+rr_enable()
+{
+  for dev in `iscsi_get_devs`; do
+    iscsi_set_rr_psp $dev
+    iscsi_set_rr_iops $dev ${1-3}
+  done
+}
+
+rr_disable()
+{
+  for dev in `iscsi_get_devs`; do
+    iscsi_set_fixed_psp $dev
+  done
+}
+
+main()
+{
+  op=${1-enable}
+  shift
+
+  case $op in
+    enable  | on  ) rr_enable  "$@" ;;
+    disable | off ) rr_disable "$@" ;;
+  esac
+}
+
+main "$@"
+
+# eof
