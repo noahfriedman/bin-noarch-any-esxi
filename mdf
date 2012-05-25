@@ -1,7 +1,7 @@
 #!/bin/sh
-# $Id$
+# $Id: esx-df,v 1.1 2012/03/07 02:25:46 friedman Exp $
 
-esx_df()
+mdf()
 {
   local label
   for label in /vmfs/volumes/*; do
@@ -17,6 +17,6 @@ esx_df()
     done
 }
 
-esx_df "$@"
+mdf "$@"
 
 # eof
