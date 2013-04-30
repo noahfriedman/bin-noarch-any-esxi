@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: esx-df,v 1.1 2012/03/07 02:25:46 friedman Exp $
+# $Id: esx-df,v 1.2 2012/05/25 00:23:55 friedman Exp $
 
 mdf()
 {
@@ -11,7 +11,7 @@ mdf()
   done
 
   local fmt="%-10s  %12s  %12s %12s %4s %s\n"
-  df | sed "$sedstr" |
+  df "$@" | sed "$sedstr" |
     while read fstype blocks used avail pct mounted; do
       printf "$fmt" "$fstype" "$blocks" "$used" "$avail" "$pct" "$mounted"
     done
