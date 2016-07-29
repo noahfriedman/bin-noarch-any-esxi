@@ -1,0 +1,70 @@
+#!/bin/sh
+# $Id$
+
+# To register a vm: vim-cmd solo/registervm $PWD/vm.vmx displayName
+# To unregister:    vim-cmd vmsvc/unregister vmId
+
+vcmd()
+{
+    echo + "$@" 1>&2
+    "$@"
+}
+
+vmxedit()
+{
+    sed -i \
+        -e '/vmxf/d' \
+        -e '/uuid/d' \
+        -e '/sched.swap/d' \
+        -e '/generatedAddress /d' \
+        "$1"
+}
+
+main()
+{
+    case $# in
+        2 ) : ;;
+        * ) echo "Usage: ${0##*/} [srcdir] [dstdir]" 1>&2
+            exit 1 ;;
+    esac
+
+    srcdir=$1
+    dstdir=$2
+
+    case $srcdir in
+        */* ) : ;;
+        *   ) srcdir=/vmfs/volumes/datastore1/templates/$srcdir ;;
+    esac
+
+    mkdir -p "$dstdir"
+
+    for ent in $srcdir/* ; do
+        if [ -d "$ent" ]; then
+            continue  # ignore subdirs for now
+        elif [ -f "$ent" ]; then
+            file=${ent##*/}
+            dstfile=$dstdir/$file
+
+            case $dstfile in
+                *.vmtx ) dstfile=${dstfile%.vmtx}.vmx ;;
+            esac
+
+            if [ -f "$dstfile" ]; then
+                echo "${dstfile##*/}: target already exists"
+                continue
+            fi
+
+            case $file in
+                *-flat.vmdk ) continue ;;
+                *.vmdk ) vcmd vmkfstools -i "$ent" -d thin "$dstfile" ;;
+                *.vmx  ) vcmd cp -p "$ent" "$dstfile"
+                         vcmd vmxedit "$dstfile" ;;
+                *      ) vcmd cp -p "$ent" "$dstfile" ;;
+            esac
+        fi
+    done
+}
+
+main "$@"
+
+# eof
