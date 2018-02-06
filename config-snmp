@@ -1,0 +1,13 @@
+#!/bin/sh
+# $Id$
+
+#esxcli network firewall ruleset set           --ruleset-id snmp --allowed-all true
+esxcli  network firewall ruleset set           --ruleset-id snmp --allowed-all false
+esxcli  network firewall ruleset allowedip add --ruleset-id snmp --ip-address  192.168.1.0/24
+esxcli  network firewall ruleset set           --ruleset-id snmp --enabled     true
+
+esxcli  system snmp set --communities public
+esxcli  system snmp set --enable true
+/etc/init.d/snmpd restart
+
+# eof
