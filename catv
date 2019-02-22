@@ -1,32 +1,38 @@
 #!/usr/bin/python
 # $Id$
 
-# ESXi 4.x-6.x has no 'cat -v' functionality.
-# This will not work as-is in 4.x because it uses constructs not available
-# in python 2.5 (no 'as' keyword, no __future__ print_function, etc).
-
-from __future__ import print_function
+# This was written to work in Python 2.5 (and possibly earlier) for ESXi 4.x,
+# as well as Python 3.x for later versions of ESXi.  Thus, some contortions.
 
 import sys
 import os
 import re
 
+# The `bytes' type is not defined in python < 2.6 at all,
+# and in 2.6 <= python < 3.0, it is equivalent to str.
+try:
+    bytes
+except NameError:
+    bytes = str
+
+def to_bytes( x, encoding='iso8859-1' ): # any 8-bit encoding would do
+    if bytes is not str:
+        return bytes( x, encoding=encoding )
+    return x
+
 def dispchar( c ):
-    if bytes is not str and isinstance( c, bytes ):
-        conv = lambda x: bytes( x, encoding='ascii' )
-    else:
-        conv = lambda x: x
     n = ord( c )
     if n < 31:
-        return conv( '^' + chr( n + 64 ) )
+        return to_bytes( '^' + chr( n + 64 ) )
     if n == 0x7f:
-        return conv( '^?' )
+        return to_bytes( '^?' )
     if n > 127:
-        return conv( '\\{:x}'.format( n ) )
+        return to_bytes( '\\{:x}'.format( n ) )
     else:
         return c
 
-pat = re.compile( b'([\x00-\x08\x0b-\x1f\x7f-\xff])' )
+pat = re.compile( to_bytes( '([\x00-\x08\x0b-\x1f\x7f-\xff])' ))
+
 def catv( fd ):
     stdout = sys.stdout.fileno()
     while True:
@@ -45,8 +51,10 @@ if __name__ == '__main__':
         else:
             try:
                 fd = os.open( filename, os.O_RDONLY )
-            except IOError as e:
-                print( e.filename, e.strerror, sep=': ', file=sys.stderr )
+            except (OSError, IOError):
+                e = sys.exc_info()[ 1 ]
+                msg = str.join( ': ', (e.filename, e.strerror) ) + '\n'
+                os.write( sys.stderr.fileno(), to_bytes( msg ))
                 continue
         catv( fd )
         os.close( fd )
