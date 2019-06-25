@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: vmclone,v 1.1 2016/07/29 17:10:04 friedman Exp $
+# $Id: vmclone,v 1.2 2019/06/19 22:14:15 friedman Exp $
 
 # To register a vm: vim-cmd solo/registervm $PWD/vm.vmx displayName
 # To unregister:    vim-cmd vmsvc/unregister vmId
@@ -54,10 +54,11 @@ main()
                 continue
             fi
 
+            fmt=flat
             case $file in
-                *-flat.vmdk     ) continue ;;
-                *-sesparse.vmdk ) continue ;;
-                *.vmdk ) vcmd vmkfstools -i "$ent" -d thin "$dstfile" ;;
+                *-flat.vmdk     ) fmt=flag;     continue ;;
+                *-sesparse.vmdk ) fmt=sesparse; continue ;;
+                *.vmdk ) vcmd vmkfstools -i "$ent" -d $fmt "$dstfile" ;;
                 *.vmx  ) vcmd cp -p "$ent" "$dstfile"
                          vcmd vmxedit "$dstfile" ;;
                 *      ) vcmd cp -p "$ent" "$dstfile" ;;
