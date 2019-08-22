@@ -1,5 +1,5 @@
 #!/bin/sh
-# $Id: vmclone,v 1.2 2019/06/19 22:14:15 friedman Exp $
+# $Id: vmclone,v 1.3 2019/06/25 19:20:29 friedman Exp $
 
 # To register a vm: vim-cmd solo/registervm $PWD/vm.vmx displayName
 # To unregister:    vim-cmd vmsvc/unregister vmId
@@ -33,11 +33,12 @@ main()
 
     case $srcdir in
         */* ) : ;;
-        *   ) srcdir=/vmfs/volumes/datastore1/templates/$srcdir ;;
+        *   ) srcdir=/vmfs/volumes/datastore0/templates/$srcdir ;;
     esac
 
     mkdir -p "$dstdir"
 
+    diskfmt=thin # default
     for ent in $srcdir/* ; do
         if [ -d "$ent" ]; then
             continue  # ignore subdirs for now
@@ -54,11 +55,10 @@ main()
                 continue
             fi
 
-            fmt=flat
             case $file in
-                *-flat.vmdk     ) fmt=flag;     continue ;;
-                *-sesparse.vmdk ) fmt=sesparse; continue ;;
-                *.vmdk ) vcmd vmkfstools -i "$ent" -d $fmt "$dstfile" ;;
+                *-flat.vmdk     ) diskfmt=thin;     continue ;;
+                *-sesparse.vmdk ) diskfmt=sesparse; continue ;;
+                *.vmdk ) vcmd vmkfstools -i "$ent" -d $diskfmt "$dstfile" ;;
                 *.vmx  ) vcmd cp -p "$ent" "$dstfile"
                          vcmd vmxedit "$dstfile" ;;
                 *      ) vcmd cp -p "$ent" "$dstfile" ;;
